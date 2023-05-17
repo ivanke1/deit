@@ -28,7 +28,26 @@ import models_v2
 
 import utils
 
+# from dynamicvit repo
+@torch.no_grad()
+def throughput(images, model):
+    model.eval()
 
+    images = images.cuda(non_blocking=True)
+    batch_size = images.shape[0]
+    for i in range(50):
+        model(images)
+    torch.cuda.synchronize()
+    print(f"throughput averaged with 30 times")
+    tic1 = time.time()
+    for i in range(30):
+        model(images)
+    torch.cuda.synchronize()
+    tic2 = time.time()
+    print(f"batch_size {batch_size} throughput {30 * batch_size / (tic2 - tic1)}")
+    MB = 1024.0 * 1024.0
+    print('memory:', torch.cuda.max_memory_allocated() / MB)
+    
 def get_args_parser():
     parser = argparse.ArgumentParser('DeiT training and evaluation script', add_help=False)
     parser.add_argument('--batch-size', default=64, type=int)
@@ -181,8 +200,9 @@ def get_args_parser():
     parser.add_argument('--world_size', default=1, type=int,
                         help='number of distributed processes')
     parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
+    
+    parser.add_argument('--throughput', action='store_true')
     return parser
-
 
 def main(args):
     utils.init_distributed_mode(args)
@@ -327,6 +347,15 @@ def main(args):
             
     model.to(device)
 
+#     throughput test from dynamicvit repo
+    if utils.is_main_process() and args.throughput:
+        print('# throughput test')
+        image = torch.randn(32, 3, args.input_size, args.input_size)
+        throughput(image, model)
+        del image
+        import sys
+        sys.exit(1)
+    
     model_ema = None
     if args.model_ema:
         # Important to create EMA model after cuda(), DP wrapper, and AMP but before SyncBN and DDP wrapper
