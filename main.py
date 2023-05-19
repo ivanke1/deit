@@ -350,7 +350,7 @@ def main(args):
 #     throughput test from dynamicvit repo
     if utils.is_main_process() and args.throughput:
         print('# throughput test')
-        image = torch.randn(32, 3, args.input_size, args.input_size)
+        image = torch.randn(1, 3, args.input_size, args.input_size)
         throughput(image, model)
         del image
         import sys
