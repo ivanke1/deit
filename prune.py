@@ -494,7 +494,16 @@ def main(args):
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))
-
+    for name, mod in model.named_modules():
+        if(hasattr(mod, 'weight') and name != 'module.head'):
+            print(name)
+            prune.random_unstructured(mod, 'weight', amount=args.mask_sparsity)
+            print(
+                "Sparsity: {:.2f}%".format(
+                    100. * float(torch.sum(mod.weight == 0))
+                    / float(mod.weight.nelement())
+                )
+            )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('DeiT training and evaluation script', parents=[get_args_parser()])
