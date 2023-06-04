@@ -183,6 +183,7 @@ def get_args_parser():
     
     parser.add_argument('--mask', action='store_true')
     parser.add_argument('--mask_sparsity', default=.5)
+    parser.add_argument('--mask_resume', action='store_true')
     
     return parser
 
@@ -398,7 +399,7 @@ def main(args):
         else:
             checkpoint = torch.load(args.resume, map_location='cpu')
         model_without_ddp.load_state_dict(checkpoint['model'])
-        if not args.eval and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
+        if not args.eval and args.mask_resume and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
             args.start_epoch = checkpoint['epoch'] + 1
