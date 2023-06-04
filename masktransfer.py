@@ -287,13 +287,13 @@ def main(args):
 
     output_dir = Path(args.output_dir)
     if args.mask_receiver:
-        for name, mod in model.named_modules():
+        for name, mod in model_without_ddp.named_modules():
             if(hasattr(mod, 'weight') and name != 'module.head'):
                 prune.identity(mod, 'weight')
         checkpoint = torch.load(args.mask_receiver, map_location='cpu')
         model_without_ddp.load_state_dict(checkpoint['model'])
                 
-        for name, mod in model2.named_modules():
+        for name, mod in model_without_ddp2.named_modules():
             if(hasattr(mod, 'weight') and name != 'module.head'):
                 prune.identity(mod, 'weight')
         donor_checkpoint = torch.load(args.mask_donor, map_location='cpu')
