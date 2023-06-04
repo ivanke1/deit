@@ -189,6 +189,7 @@ def get_args_parser():
     parser.add_argument('--mask_sparsity', default=.5)
     parser.add_argument('--mask_resume', action='store_true')
     parser.add_argument('--load_mask', action='store_true')
+    parser.add_argument('--mask_method', default='random')
     
     return parser
 
@@ -426,16 +427,34 @@ def main(args):
         lr_scheduler.step(args.start_epoch)
     
     if args.mask:
-        for name, mod in model.named_modules():
-            if(hasattr(mod, 'weight') and name != 'module.head'):
-                print(name)
-                prune.random_unstructured(mod, 'weight', amount=args.mask_sparsity)
-                print(
-                    "Sparsity: {:.2f}%".format(
-                        100. * float(torch.sum(mod.weight == 0))
-                        / float(mod.weight.nelement())
+        if args.mask_method == 'random':
+            for name, mod in model.named_modules():
+                if(hasattr(mod, 'weight') and name != 'module.head'):
+                    print(name)
+                    prune.random_unstructured(mod, 'weight', amount=args.mask_sparsity)
+                    print(
+                        "Sparsity: {:.2f}%".format(
+                            100. * float(torch.sum(mod.weight == 0))
+                            / float(mod.weight.nelement())
+                        )
                     )
-                )
+        elif args.mask_method == 'normal':
+            ptp = ()
+            for name, mod in model.named_modules():
+                if(hasattr(mod, 'weight') and name != 'module.head'):
+                    ptp += ((mod,'weight'),)
+            prune.global_unstructured(ptp, prune.L1Unstructured, amount=args.mask_sparsity)
+            for name, mod in model.named_modules():
+                if(hasattr(mod, 'weight')):
+                    print(name)
+                    print(
+                        "Sparsity: {:.2f}%".format(
+                            100. * float(torch.sum(mod.weight == 0))
+                            / float(mod.weight.nelement())
+                        )
+                    )
+        else:
+            return
                 
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
