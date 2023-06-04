@@ -182,6 +182,7 @@ def get_args_parser():
     parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
     
     parser.add_argument('--mask', action='store_true')
+    parser.add_argument('--mask_sparsity', default=.5)
     
     return parser
 
@@ -415,7 +416,13 @@ def main(args):
         for name, mod in model.named_modules():
             if(hasattr(mod, 'weight') and name != 'module.head'):
                 print(name)
-                prune.random_unstructured(mod, 'weight', amount=.5)
+                prune.random_unstructured(mod, 'weight', amount=args.mask_sparsity)
+                print(
+                    "Sparsity: {:.2f}%".format(
+                        100. * float(torch.sum(mod.weight == 0))
+                        / float(mod.weight.nelement())
+                    )
+                )
                 
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
