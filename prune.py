@@ -413,8 +413,14 @@ def main(args):
       import torch.nn.utils.prune as prune
       import torch.nn.functional as F
       
-      print(list(model.named_parameters()))
-      pruned_model = prune.random_unstructured(model, 'weight', amount=.5)
+#       print(list(model.named_parameters()))
+      for name, tensor in model.named_parameters():
+        print(name)
+        print(model.state_dict()[name].shape)
+
+      for name, param in model.named_parameters():
+        if(name != 'module.head.weight' && 'weight' in name)
+      pruned_model = prune.random_unstructured(model, name, amount=.5)
       print(list(pruned_model.named_parameters()))
 
       return
