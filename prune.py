@@ -402,7 +402,7 @@ def main(args):
             for name, mod in model.named_modules():
                 if(hasattr(mod, 'weight') and name != 'module.head'):
                     print(name)
-                    prune.identity(mod, 'weight', amount=args.mask_sparsity)
+                    prune.identity(mod, 'weight')
                     print(
                         "Sparsity: {:.2f}%".format(
                             100. * float(torch.sum(mod.weight == 0))
