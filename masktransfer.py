@@ -300,7 +300,7 @@ def main(args):
         model_without_ddp2.load_state_dict(donor_checkpoint['model'])
         
         for (name1, mod1), (name2, mod2) in zip(model_without_ddp.named_modules(), model_without_ddp2.named_modules()):
-            if(hasattr(mod1, 'weight') and name2 != 'module.head'):
+            if(hasattr(mod1, 'weight') and name != 'head'):
                 print(name1)
                 mod1.weight_mask = mod2.weight_mask
                 prune.identity(mod1, 'weight')
