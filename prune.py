@@ -496,9 +496,8 @@ def main(args):
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))
     for name, mod in model.named_modules():
-        if(hasattr(mod, 'weight') and name != 'module.head'):
+        if(hasattr(mod, 'weight')):
             print(name)
-            prune.random_unstructured(mod, 'weight', amount=args.mask_sparsity)
             print(
                 "Sparsity: {:.2f}%".format(
                     100. * float(torch.sum(mod.weight == 0))
