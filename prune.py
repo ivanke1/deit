@@ -407,21 +407,16 @@ def main(args):
                 loss_scaler.load_state_dict(checkpoint['scaler'])
         lr_scheduler.step(args.start_epoch)
     
-    mask = None
     if args.mask:
         from torch import nn
         import torch.nn.utils.prune as prune
         import torch.nn.functional as F
       
-#       print(list(model.named_parameters()))
-        for name, tensor in model.named_parameters():
-            print(name)
-            print(model.state_dict()[name].shape)
-
         for name, mod in model.named_modules():
-            if(hasattr(mod, 'weight')):
+            if(hasattr(mod, 'weight') and name != 'module.head'):
                 print(name)
                 prune.random_unstructured(mod, 'weight', amount=.5)
+                
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
