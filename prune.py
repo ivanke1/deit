@@ -400,16 +400,10 @@ def main(args):
     output_dir = Path(args.output_dir)
     if args.resume:
         if args.load_mask:
+            print("Identity pruning to prepare mask loading")
             for name, mod in model.named_modules():
                 if(hasattr(mod, 'weight') and name != 'module.head'):
-                    print(name)
                     prune.identity(mod, 'weight')
-                    print(
-                        "Sparsity: {:.2f}%".format(
-                            100. * float(torch.sum(mod.weight == 0))
-                            / float(mod.weight.nelement())
-                        )
-                    )
         if args.resume.startswith('https'):
             checkpoint = torch.hub.load_state_dict_from_url(
                 args.resume, map_location='cpu', check_hash=True)
