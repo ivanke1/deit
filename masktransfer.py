@@ -207,7 +207,7 @@ def main(args):
 
     cudnn.benchmark = True
 
-    args.nb_classes = 1000
+    args.nb_classes = 100
 
     mixup_fn = None
     mixup_active = args.mixup > 0 or args.cutmix > 0. or args.cutmix_minmax is not None
@@ -229,6 +229,18 @@ def main(args):
     )         
     model.to(device)
     
+    print(f"Creating imnet model: {args.model}")
+    model2 = create_model(
+        args.model,
+        pretrained=False,
+        num_classes=1000,
+        drop_rate=args.drop,
+        drop_path_rate=args.drop_path,
+        drop_block_rate=None,
+        img_size=args.input_size
+    )         
+    model2.to(device)
+    
     model_ema = None
     if args.model_ema:
         # Important to create EMA model after cuda(), DP wrapper, and AMP but before SyncBN and DDP wrapper
@@ -239,11 +251,12 @@ def main(args):
             resume='')
 
     model_without_ddp = model
+    model_without_ddp2 = model2
     if args.distributed:
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
         model_without_ddp = model.module
-    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print('number of params:', n_parameters)
+        model2 = torch.nn.parallel.DistributedDataParallel(model2, device_ids=[args.gpu])
+        model_without_ddp2 = model2.module
     if not args.unscale_lr:
         linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
         args.lr = linear_scaled_lr
@@ -278,9 +291,9 @@ def main(args):
         model_without_ddp.load_state_dict(checkpoint['model'])
         
         donor_checkpoint = torch.load(args.mask_donor, map_location='cpu')
-        dummy = copy.deepcopy(model_without_ddp).load_state_dict(donor_checkpoint['model'])
+        model_without_ddp2.load_state_dict(donor_checkpoint['model'])
         
-        for (name1, mod1), (name2, mod2) in zip(model_without_ddp.named_modules(), dummy.named_modules()):
+        for (name1, mod1), (name2, mod2) in zip(model_without_ddp.named_modules(), model_without_ddp2.named_modules()):
             if(hasattr(mod1, 'weight') and name1 != 'module.head'):
                 print(name1)
                 mod1.weight_mask = mod2.weight_mask
