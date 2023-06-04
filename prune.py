@@ -419,7 +419,7 @@ def main(args):
         print(model.state_dict()[name].shape)
 
       for name, param in model.named_parameters():
-        if(name != 'module.head.weight' && 'weight' in name)
+        if(name != 'module.head.weight' and 'weight' in name)
       pruned_model = prune.random_unstructured(model, name, amount=.5)
       print(list(pruned_model.named_parameters()))
 
