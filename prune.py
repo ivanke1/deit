@@ -421,7 +421,7 @@ def main(args):
         for name, mod in model.named_modules():
             if(hasattr(mod, 'weight')):
                 print(name)
-                prune.random_unstructured(param, name, amount=.5)
+                prune.random_unstructured(mod, 'weight', amount=.5)
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
