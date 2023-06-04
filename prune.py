@@ -27,6 +27,10 @@ import models
 import models_v2
 
 import utils
+
+from torch import nn
+import torch.nn.utils.prune as prune
+import torch.nn.functional as F
     
 def get_args_parser():
     parser = argparse.ArgumentParser('DeiT training and evaluation script', add_help=False)
@@ -184,6 +188,7 @@ def get_args_parser():
     parser.add_argument('--mask', action='store_true')
     parser.add_argument('--mask_sparsity', default=.5)
     parser.add_argument('--mask_resume', action='store_true')
+    parser.add_argument('--load_mask', action='store_true')
     
     return parser
 
@@ -393,6 +398,17 @@ def main(args):
 
     output_dir = Path(args.output_dir)
     if args.resume:
+        if args.load_mask:
+            for name, mod in model.named_modules():
+                if(hasattr(mod, 'weight') and name != 'module.head'):
+                    print(name)
+                    prune.identity(mod, 'weight', amount=args.mask_sparsity)
+                    print(
+                        "Sparsity: {:.2f}%".format(
+                            100. * float(torch.sum(mod.weight == 0))
+                            / float(mod.weight.nelement())
+                        )
+                    )
         if args.resume.startswith('https'):
             checkpoint = torch.hub.load_state_dict_from_url(
                 args.resume, map_location='cpu', check_hash=True)
@@ -410,10 +426,6 @@ def main(args):
         lr_scheduler.step(args.start_epoch)
     
     if args.mask:
-        from torch import nn
-        import torch.nn.utils.prune as prune
-        import torch.nn.functional as F
-      
         for name, mod in model.named_modules():
             if(hasattr(mod, 'weight') and name != 'module.head'):
                 print(name)
@@ -503,9 +515,6 @@ def main(args):
                      **{f'test_{k}': v for k, v in test_stats.items()},
                      'epoch': epoch,
                      'n_parameters': n_parameters}
-        
-        
-        
         
         if args.output_dir and utils.is_main_process():
             with (output_dir / "log.txt").open("a") as f:
