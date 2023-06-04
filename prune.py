@@ -418,14 +418,10 @@ def main(args):
             print(name)
             print(model.state_dict()[name].shape)
 
-        for name, param in model.named_parameters():
-            if(name != 'module.head.weight' and 'weight' in name):
+        for name, mod in model.named_modules():
+            if(hasattr(mod, 'weight')):
+                print(name)
                 prune.random_unstructured(param, name, amount=.5)
-        print(list(model.named_parameters()))
-        for name, tensor in model.named_parameters():
-          print(name)
-          print(model.state_dict()[name])
-        return
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
