@@ -409,21 +409,23 @@ def main(args):
     
     mask = None
     if args.mask:
-      from torch import nn
-      import torch.nn.utils.prune as prune
-      import torch.nn.functional as F
+        from torch import nn
+        import torch.nn.utils.prune as prune
+        import torch.nn.functional as F
       
 #       print(list(model.named_parameters()))
-      for name, tensor in model.named_parameters():
-        print(name)
-        print(model.state_dict()[name].shape)
+        for name, tensor in model.named_parameters():
+            print(name)
+            print(model.state_dict()[name].shape)
 
-      for name, param in model.named_parameters():
-        if(name != 'module.head.weight' and 'weight' in name)
-      pruned_model = prune.random_unstructured(model, name, amount=.5)
-      print(list(pruned_model.named_parameters()))
-
-      return
+        for name, param in model.named_parameters():
+            if(name != 'module.head.weight' and 'weight' in name):
+                prune.random_unstructured(param, name, amount=.5)
+        print(list(model.named_parameters()))
+        for name, tensor in model.named_parameters():
+          print(name)
+          print(model.state_dict()[name])
+        return
     if args.eval:
         test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
