@@ -186,7 +186,7 @@ def get_args_parser():
     parser.add_argument('--dist_url', default='env://', help='url used to set up distributed training')
     
     parser.add_argument('--mask', action='store_true')
-    parser.add_argument('--mask_sparsity', default=.5)
+    parser.add_argument('--mask_sparsity', default=.5, type=float)
     parser.add_argument('--mask_resume', action='store_true')
     parser.add_argument('--load_mask', action='store_true')
     
