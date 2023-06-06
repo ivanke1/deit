@@ -189,6 +189,7 @@ def get_args_parser():
     parser.add_argument('--mask_sparsity', default=.5, type=float)
     parser.add_argument('--mask_resume', action='store_true')
     parser.add_argument('--load_mask', action='store_true')
+    parser.add_argument('--nb_classes', default=1000, type=int)
     
     return parser
 
@@ -196,9 +197,6 @@ def main(args):
     utils.init_distributed_mode(args)
 
     print(args)
-
-    if args.distillation_type != 'none' and args.finetune and not args.eval:
-        raise NotImplementedError("Finetuning with distillation not yet supported")
 
     device = torch.device(args.device)
 
@@ -209,8 +207,6 @@ def main(args):
     # random.seed(seed)
 
     cudnn.benchmark = True
-
-    args.nb_classes = 1000
 
     mixup_fn = None
     mixup_active = args.mixup > 0 or args.cutmix > 0. or args.cutmix_minmax is not None
@@ -230,29 +226,7 @@ def main(args):
         drop_block_rate=None,
         img_size=args.input_size
     )
-           
-    if args.attn_only:
-        for name_p,p in model.named_parameters():
-            if '.attn.' in name_p:
-                p.requires_grad = True
-            else:
-                p.requires_grad = False
-        try:
-            model.head.weight.requires_grad = True
-            model.head.bias.requires_grad = True
-        except:
-            model.fc.weight.requires_grad = True
-            model.fc.bias.requires_grad = True
-        try:
-            model.pos_embed.requires_grad = True
-        except:
-            print('no position encoding')
-        try:
-            for p in model.patch_embed.parameters():
-                p.requires_grad = False
-        except:
-            print('no patch embed')
-            
+                       
     model.to(device)
     
     model_ema = None
@@ -292,23 +266,6 @@ def main(args):
         criterion = torch.nn.BCEWithLogitsLoss()
         
     teacher_model = None
-    if args.distillation_type != 'none':
-        assert args.teacher_path, 'need to specify teacher-path when using distillation'
-        print(f"Creating teacher model: {args.teacher_model}")
-        teacher_model = create_model(
-            args.teacher_model,
-            pretrained=False,
-            num_classes=args.nb_classes,
-            global_pool='avg',
-        )
-        if args.teacher_path.startswith('https'):
-            checkpoint = torch.hub.load_state_dict_from_url(
-                args.teacher_path, map_location='cpu', check_hash=True)
-        else:
-            checkpoint = torch.load(args.teacher_path, map_location='cpu')
-        teacher_model.load_state_dict(checkpoint['model'])
-        teacher_model.to(device)
-        teacher_model.eval()
 
     # wrap the criterion in our custom DistillationLoss, which
     # just dispatches to the original criterion if args.distillation_type is 'none'
@@ -321,19 +278,9 @@ def main(args):
         if args.load_mask:
             for name, mod in model.named_modules():
                 if(hasattr(mod, 'weight') and name != 'module.head'):
-                    print(name)
+                    print("Identity pruning to prepare mask")
                     prune.identity(mod, 'weight')
-                    print(
-                        "Sparsity: {:.2f}%".format(
-                            100. * float(torch.sum(mod.weight == 0))
-                            / float(mod.weight.nelement())
-                        )
-                    )
-        if args.resume.startswith('https'):
-            checkpoint = torch.hub.load_state_dict_from_url(
-                args.resume, map_location='cpu', check_hash=True)
-        else:
-            checkpoint = torch.load(args.resume, map_location='cpu')
+        checkpoint = torch.load(args.resume, map_location='cpu')
         model_without_ddp.load_state_dict(checkpoint['model'])
         if not args.eval and args.mask_resume and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
@@ -361,7 +308,7 @@ def main(args):
                     )
                 )
                 
-    print(f"Saving imnet deit mask")
+    print(f"Saving pruned mask for deit model")
     if args.output_dir:
         checkpoint_paths = [output_dir / 'checkpoint.pth']
         for checkpoint_path in checkpoint_paths:
