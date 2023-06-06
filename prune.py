@@ -345,12 +345,28 @@ def main(args):
             for name, mod in model.named_modules():
                 if(hasattr(mod, 'weight') and name != 'module.head'):
                     prune.identity(mod, 'weight')
-        if args.resume.startswith('https'):
-            checkpoint = torch.hub.load_state_dict_from_url(
-                args.resume, map_location='cpu', check_hash=True)
-        else:
-            checkpoint = torch.load(args.resume, map_location='cpu')
+        checkpoint = torch.load(args.resume, map_location='cpu')
         model_without_ddp.load_state_dict(checkpoint['model'])
+        #model
+        total_zero = 0
+        total = 0
+        for name, mod in model.named_modules():
+            if(hasattr(mod, 'weight') and name != 'module.head'):
+                total_zero += float(torch.sum(mod.weight == 0))
+                total += float(mod.weight.nelement())
+        print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
+        print(total_zero)
+        print(total)
+        #modelwoddp
+        total_zero = 0
+        total = 0
+        for name, mod in model_without_ddp.named_modules():
+            if(hasattr(mod, 'weight') and name != 'module.head'):
+                total_zero += float(torch.sum(mod.weight == 0))
+                total += float(mod.weight.nelement())
+        print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
+        print(total_zero)
+        print(total)
         if not args.eval and args.mask_resume and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
@@ -497,15 +513,28 @@ def main(args):
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
     print('Training time {}'.format(total_time_str))
+  
+    #model
+    total_zero = 0
+    total = 0
     for name, mod in model.named_modules():
-        if(hasattr(mod, 'weight')):
-            print(name)
-            print(
-                "Sparsity: {:.2f}%".format(
-                    100. * float(torch.sum(mod.weight == 0))
-                    / float(mod.weight.nelement())
-                )
-            )
+        if(hasattr(mod, 'weight') and name != 'module.head'):
+            total_zero += float(torch.sum(mod.weight == 0))
+            total += float(mod.weight.nelement())
+    print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
+    print(total_zero)
+    print(total)
+    #modelwoddp
+    total_zero = 0
+    total = 0
+    for name, mod in model_without_ddp.named_modules():
+        if(hasattr(mod, 'weight') and name != 'module.head'):
+            total_zero += float(torch.sum(mod.weight == 0))
+            total += float(mod.weight.nelement())
+    print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
+    print(total_zero)
+    print(total)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('DeiT training and evaluation script', parents=[get_args_parser()])
