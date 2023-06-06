@@ -397,15 +397,13 @@ def main(args):
                 
     if args.eval:
         # verification
-#         total_zero = 0
-#         total = 0
-#         for name, mod in model.named_modules():
-#             if(hasattr(mod, 'weight') and name != 'module.head'):
-#                 total_zero += float(torch.sum(mod.weight == 0))
-#                 total += float(mod.weight.nelement())
-#         print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
-#         print(total_zero)
-#         print(total)
+        total_zero = 0
+        total = 0
+        for name, mod in model.named_modules():
+            if(hasattr(mod, 'weight') and name != 'module.head'):
+                total_zero += float(torch.sum(mod.weight == 0))
+                total += float(mod.weight.nelement())
+        print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
         for name, mod in model.named_modules():
                 if(hasattr(mod, 'weight')):
                     print(name)
