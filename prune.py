@@ -403,6 +403,7 @@ def main(args):
             if(hasattr(mod, 'weight') and name != 'module.head'):
                 total_zero += float(torch.sum(mod.weight == 0))
                 total += float(mod.weight.nelement())
+                prune.remove(mod, 'weight')
         print("Sparsity: {:.2f}%".format(100.*float(total_zero)/float(total)))
         
         test_stats = evaluate(data_loader_val, model, device)
