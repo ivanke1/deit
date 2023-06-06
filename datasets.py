@@ -74,14 +74,12 @@ def build_dataset(is_train, args):
     elif args.data_set == 'MNIST':
         dataset = datasets.MNIST(args.data_path, train=is_train, transform=transform, download=True)
         nb_classes = 10
-    elif args.data_set == 'FLOWERS':
+    elif args.data_set == 'SVHN':
         if is_train:
-            dataset1 = datasets.Flowers102(args.data_path, split='train', transform=transform, download=True)
-            dataset2 = datasets.Flowers102(args.data_path, split='val', transform=transform, download=True)
-            dataset = torch.utils.data.ConcatDataset([dataset1, dataset2])
+            dataset = datasets.SVHN(args.data_path, split='train', transform=transform, download=True)
         else:
-            dataset = datasets.Flowers102(args.data_path, split='test', transform=transform)
-        nb_classes = 102
+            dataset = datasets.SVHN(args.data_path, split='test', transform=transform, download=True)
+        nb_classes = 10
     return dataset, nb_classes
 
 
