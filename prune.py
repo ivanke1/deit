@@ -335,6 +335,10 @@ def main(args):
             for name, mod in model.named_modules():
                 if(hasattr(mod, 'weight') and name != 'module.head'):
                     prune.identity(mod, 'weight')
+            print("Testing removal to make mask permanent")
+            for name, mod in model.named_modules():
+                if(hasattr(mod, 'weight') and name != 'module.head'):
+                    prune.remove(mod, 'weight')
         #model
         total_zero = 0
         total = 0
