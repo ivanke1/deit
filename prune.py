@@ -314,23 +314,6 @@ def main(args):
         criterion = torch.nn.BCEWithLogitsLoss()
         
     teacher_model = None
-    if args.distillation_type != 'none':
-        assert args.teacher_path, 'need to specify teacher-path when using distillation'
-        print(f"Creating teacher model: {args.teacher_model}")
-        teacher_model = create_model(
-            args.teacher_model,
-            pretrained=False,
-            num_classes=args.nb_classes,
-            global_pool='avg',
-        )
-        if args.teacher_path.startswith('https'):
-            checkpoint = torch.hub.load_state_dict_from_url(
-                args.teacher_path, map_location='cpu', check_hash=True)
-        else:
-            checkpoint = torch.load(args.teacher_path, map_location='cpu')
-        teacher_model.load_state_dict(checkpoint['model'])
-        teacher_model.to(device)
-        teacher_model.eval()
 
     # wrap the criterion in our custom DistillationLoss, which
     # just dispatches to the original criterion if args.distillation_type is 'none'
@@ -347,6 +330,11 @@ def main(args):
                     prune.identity(mod, 'weight')
         checkpoint = torch.load(args.resume, map_location='cpu')
         model_without_ddp.load_state_dict(checkpoint['model'])
+        if args.load_mask:
+            print("Identity pruning second time to complete mask loading")
+            for name, mod in model.named_modules():
+                if(hasattr(mod, 'weight') and name != 'module.head'):
+                    prune.identity(mod, 'weight')
         #model
         total_zero = 0
         total = 0
