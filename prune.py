@@ -458,7 +458,7 @@ def main(args):
             if(hasattr(mod, 'weight') and name != 'module.head'):
                 total_zero += float(torch.sum(mod.weight == 0))
                 total += float(mod.weight.nelement())
-        print("Sparsity: {:.2f}%".format(total_zero/total))
+        print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
         
         test_stats = evaluate(data_loader_val, model, device)
         print(f"Accuracy of the network on the {len(dataset_val)} test images: {test_stats['acc1']:.1f}%")
