@@ -72,7 +72,7 @@ def build_dataset(is_train, args):
                               category=args.inat_category, transform=transform)
         nb_classes = dataset.nb_classes
     elif args.data_set == 'MNIST':
-        dataset = datasets.MNIST(args.data_path, train=is_train:, transform=transform)
+        dataset = datasets.MNIST(args.data_path, train=is_train, transform=transform)
         nb_classes = 10
     elif args.data_set == 'FLOWERS':
         if is_train:
