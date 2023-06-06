@@ -342,7 +342,7 @@ def main(args):
             if(hasattr(mod, 'weight') and name != 'module.head'):
                 total_zero += float(torch.sum(mod.weight == 0))
                 total += float(mod.weight.nelement())
-        print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
+        print("Sparsity: {:.2f}%".format(100.*float(total_zero)/float(total)))
         print(total_zero)
         print(total)
         #modelwoddp
@@ -352,7 +352,7 @@ def main(args):
             if(hasattr(mod, 'weight') and name != 'module.head'):
                 total_zero += float(torch.sum(mod.weight == 0))
                 total += float(mod.weight.nelement())
-        print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
+        print("Sparsity: {:.2f}%".format(100.*float(total_zero)/float(total)))
         print(total_zero)
         print(total)
         if not args.eval and args.mask_resume and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
@@ -509,7 +509,7 @@ def main(args):
         if(hasattr(mod, 'weight') and name != 'module.head'):
             total_zero += float(torch.sum(mod.weight == 0))
             total += float(mod.weight.nelement())
-    print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
+    print("Sparsity: {:.2f}%".format(100.*float(total_zero)/float(total)))
     print(total_zero)
     print(total)
     #modelwoddp
@@ -519,7 +519,7 @@ def main(args):
         if(hasattr(mod, 'weight') and name != 'module.head'):
             total_zero += float(torch.sum(mod.weight == 0))
             total += float(mod.weight.nelement())
-    print("Sparsity: {:.2f}%".format(float(total_zero)/float(total)))
+    print("Sparsity: {:.2f}%".format(100.*float(total_zero)/float(total)))
     print(total_zero)
     print(total)
 
