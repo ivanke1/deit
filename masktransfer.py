@@ -189,6 +189,8 @@ def get_args_parser():
     parser.add_argument('--mask_donor', default='')
     parser.add_argument('--mask_receiver', default = '')
     parser.add_argument('--mask_resume', action='store_true')
+    parser.add_argument('--donor_classes', default=1000, type=int)
+    parser.add_argument('--receiver_classes', default=100, type=int)
     
     return parser
 
@@ -207,21 +209,19 @@ def main(args):
 
     cudnn.benchmark = True
 
-    args.nb_classes = 100
-
     mixup_fn = None
     mixup_active = args.mixup > 0 or args.cutmix > 0. or args.cutmix_minmax is not None
     if mixup_active:
         mixup_fn = Mixup(
             mixup_alpha=args.mixup, cutmix_alpha=args.cutmix, cutmix_minmax=args.cutmix_minmax,
             prob=args.mixup_prob, switch_prob=args.mixup_switch_prob, mode=args.mixup_mode,
-            label_smoothing=args.smoothing, num_classes=args.nb_classes)
+            label_smoothing=args.smoothing, num_classes=args.receiver_classes)
 
     print(f"Creating model: {args.model}")
     model = create_model(
         args.model,
         pretrained=False,
-        num_classes=args.nb_classes,
+        num_classes=args.receiver_classes,
         drop_rate=args.drop,
         drop_path_rate=args.drop_path,
         drop_block_rate=None,
@@ -229,11 +229,11 @@ def main(args):
     )         
     model.to(device)
     
-    print(f"Creating imnet model: {args.model}")
+    print(f"Creating donor model: {args.model}")
     model2 = create_model(
         args.model,
         pretrained=False,
-        num_classes=1000,
+        num_classes=args.donor_classes,
         drop_rate=args.drop,
         drop_path_rate=args.drop_path,
         drop_block_rate=None,
