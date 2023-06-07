@@ -205,6 +205,7 @@ def main(args):
             similar += float(torch.sum(torch.eq(mod1.weight, mod2.weight)))
             total += float(mod.weight.nelement())
     print("Shared Sparsity: {:.2f}%".format(100. * float(similar)/float(total)))
+    print(similar)
    
 
 if __name__ == '__main__':
