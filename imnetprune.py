@@ -227,9 +227,6 @@ def main(args):
         model_without_ddp = model.module
     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print('number of params:', n_parameters)
-    if not args.unscale_lr:
-        linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
-        args.lr = linear_scaled_lr
     optimizer = create_optimizer(args, model_without_ddp)
     loss_scaler = NativeScaler()
 
