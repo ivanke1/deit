@@ -164,36 +164,33 @@ def main(args):
         model2 = torch.nn.parallel.DistributedDataParallel(model2, device_ids=[args.gpu])
         model_without_ddp2 = model2.module
 
-    output_dir = Path(args.output_dir)
-    if args.mask_receiver:
-        # preparation
-        for name, mod in model.named_modules():
-            if(hasattr(mod, 'weight') and name != 'module.head'):
-                prune.identity(mod, 'weight')
-        for name, mod in model2.named_modules():
-            if(hasattr(mod, 'weight') and name != 'module.head'):
-                prune.identity(mod, 'weight')
+    # preparation
+    for name, mod in model.named_modules():
+        if(hasattr(mod, 'weight') and name != 'module.head'):
+            prune.identity(mod, 'weight')
+    for name, mod in model2.named_modules():
+        if(hasattr(mod, 'weight') and name != 'module.head'):
+            prune.identity(mod, 'weight')
+    checkpoint = torch.load(args.mask_receiver, map_location='cpu')
+    model_without_ddp.load_state_dict(checkpoint['model'])
+    donor_checkpoint = torch.load(args.mask_donor, map_location='cpu')
+    model_without_ddp2.load_state_dict(donor_checkpoint['model'])
+
+    # preparation stage 2
+    for name, mod in model.named_modules():
+        if(hasattr(mod, 'weight') and name != 'module.head'):
+            prune.identity(mod, 'weight')
+    for name, mod in model2.named_modules():
+        if(hasattr(mod, 'weight') and name != 'module.head'):
+            prune.identity(mod, 'weight')
         
-        checkpoint = torch.load(args.mask_receiver, map_location='cpu')
-        model_without_ddp.load_state_dict(checkpoint['model'])
-        donor_checkpoint = torch.load(args.mask_donor, map_location='cpu')
-        model_without_ddp2.load_state_dict(donor_checkpoint['model'])
-        
-        # preparation stage 2
-        for name, mod in model.named_modules():
-            if(hasattr(mod, 'weight') and name != 'module.head'):
-                prune.identity(mod, 'weight')
-        for name, mod in model2.named_modules():
-            if(hasattr(mod, 'weight') and name != 'module.head'):
-                prune.identity(mod, 'weight')
-        
-        similar = 0
-        total = 0
-        for (name1, mod1), (name2, mod2) in zip(model_without_ddp.named_modules(), model_without_ddp2.named_modules()):
-            if(hasattr(mod1, 'weight') and name1 != 'head'):
-                similar += float(torch.sum(torch.eq(mod1.weight, mod2.weight)))
-                total += float(mod.weight.nelement())
-        print("Shared Sparsity: {:.2f}%".format(100. * similar/total))
+    similar = 0
+    total = 0
+    for (name1, mod1), (name2, mod2) in zip(model_without_ddp.named_modules(), model_without_ddp2.named_modules()):
+        if(hasattr(mod1, 'weight') and name1 != 'module.head'):
+            similar += float(torch.sum(torch.eq(mod1.weight, mod2.weight)))
+            total += float(mod.weight.nelement())
+    print("Shared Sparsity: {:.2f}%".format(100. * similar/total))
    
 
 if __name__ == '__main__':
