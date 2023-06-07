@@ -187,7 +187,7 @@ def main(args):
     similar = 0
     total = 0
     for (name1, mod1), (name2, mod2) in zip(model_without_ddp.named_modules(), model_without_ddp2.named_modules()):
-        if(hasattr(mod1, 'weight') and name1 != 'module.head'):
+        if(hasattr(mod1, 'weight') and name1 != 'head'):
             similar += float(torch.sum(torch.eq(mod1.weight, mod2.weight)))
             total += float(mod.weight.nelement())
     print("Shared Sparsity: {:.2f}%".format(100. * similar/total))
