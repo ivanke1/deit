@@ -170,7 +170,7 @@ def get_args_parser():
     parser.add_argument('--mask', action='store_true')
     parser.add_argument('--mask_sparsity', default=.5, type=float)
     parser.add_argument('--mask_resume', action='store_true')
-    parser.add_argument('--load_mask', action='store_true')
+    parser.add_argument('--load_mask', action='store_true') # unnecessary
     parser.add_argument('--nb_classes', default=1000, type=int)
     
     return parser
