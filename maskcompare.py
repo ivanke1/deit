@@ -109,11 +109,11 @@ def get_args_parser():
     return parser
 
 def main(args):
-#     utils.init_distributed_mode(args)
+    utils.init_distributed_mode(args)
 
     print(args)
 
-#     device = torch.device(args.device)
+    device = torch.device(args.device)
     device = torch.device("cpu")
 
     # fix the seed for reproducibility
@@ -159,18 +159,18 @@ def main(args):
 
     model_without_ddp = model
     model_without_ddp2 = model2
-#     if args.distributed:
-#         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-#         model_without_ddp = model.module
-#         model2 = torch.nn.parallel.DistributedDataParallel(model2, device_ids=[args.gpu])
-#         model_without_ddp2 = model2.module
+    if args.distributed:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+        model_without_ddp = model.module
+        model2 = torch.nn.parallel.DistributedDataParallel(model2, device_ids=[args.gpu])
+        model_without_ddp2 = model2.module
 
     # preparation
     for name, mod in model.named_modules():
-        if(hasattr(mod, 'weight') and name != 'module.head'):
+        if(hasattr(mod, 'weight') and name != 'head'):
             prune.identity(mod, 'weight')
     for name, mod in model2.named_modules():
-        if(hasattr(mod, 'weight') and name != 'module.head'):
+        if(hasattr(mod, 'weight') and name != 'head'):
             prune.identity(mod, 'weight')
     checkpoint = torch.load(args.mask_receiver, map_location='cpu')
     model_without_ddp.load_state_dict(checkpoint['model'])
@@ -179,29 +179,29 @@ def main(args):
 
     # preparation stage 2
     for name, mod in model.named_modules():
-        if(hasattr(mod, 'weight') and name != 'module.head'):
+        if(hasattr(mod, 'weight') and name != 'head'):
             prune.identity(mod, 'weight')
     for name, mod in model2.named_modules():
-        if(hasattr(mod, 'weight') and name != 'module.head'):
+        if(hasattr(mod, 'weight') and name != 'head'):
             prune.identity(mod, 'weight')
     total_zero = 0
     total = 0
     for name, mod in model.named_modules():
-        if(hasattr(mod, 'weight') and name != 'module.head'):
+        if(hasattr(mod, 'weight') and name != 'head'):
             total_zero += float(torch.sum(mod.weight == 0))
             total += float(mod.weight.nelement())
     print("Sparsity 1: {:.2f}%".format(100.*float(total_zero)/float(total)))
     total_zero = 0
     total = 0
     for name, mod in model2.named_modules():
-        if(hasattr(mod, 'weight') and name != 'module.head'):
+        if(hasattr(mod, 'weight') and name != 'head'):
             total_zero += float(torch.sum(mod.weight == 0))
             total += float(mod.weight.nelement())
     print("Sparsity 2: {:.2f}%".format(100.*float(total_zero)/float(total)))
     similar = 0
     total = 0
     for (name1, mod1), (name2, mod2) in zip(model.named_modules(), model2.named_modules()):
-        if(hasattr(mod1, 'weight') and name1 != 'module.head'):
+        if(hasattr(mod1, 'weight') and name1 != 'head'):
             similar += float(torch.sum(torch.eq(mod1.weight, mod2.weight)))
             total += float(mod.weight.nelement())
     print("Shared Sparsity: {:.2f}%".format(100. * float(similar)/float(total)))
