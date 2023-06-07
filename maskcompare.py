@@ -166,12 +166,18 @@ def main(args):
         model_without_ddp2 = model2.module
 
     # preparation
+    total1 = 0
     for name, mod in model.named_modules():
         if(hasattr(mod, 'weight') and name != 'module.head'):
             prune.identity(mod, 'weight')
+            total1 += float(mod.weight.nelement())
+    print(total1)
+    total2 = 0
     for name, mod in model2.named_modules():
         if(hasattr(mod, 'weight') and name != 'head'):
             prune.identity(mod, 'weight')
+            total2 += float(mod.weight.nelement())
+    print(total2)
     checkpoint = torch.load(args.mask_receiver, map_location='cpu')
     model_without_ddp.load_state_dict(checkpoint['model'])
     donor_checkpoint = torch.load(args.mask_donor, map_location='cpu')
