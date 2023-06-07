@@ -112,9 +112,7 @@ def get_args_parser():
     parser.add_argument('--train-mode', action='store_true')
     parser.add_argument('--no-train-mode', action='store_false', dest='train_mode')
     parser.set_defaults(train_mode=True)
-    
-    parser.add_argument('--ThreeAugment', action='store_true') #3augment
-    
+        
     parser.add_argument('--src', action='store_true') #simple random crop
     
     # * Random Erase params
@@ -148,10 +146,6 @@ def get_args_parser():
     parser.add_argument('--distillation-type', default='none', choices=['none', 'soft', 'hard'], type=str, help="")
     parser.add_argument('--distillation-alpha', default=0.5, type=float, help="")
     parser.add_argument('--distillation-tau', default=1.0, type=float, help="")
-
-    # * Finetuning params
-    parser.add_argument('--finetune', default='', help='finetune from checkpoint')
-    parser.add_argument('--attn-only', action='store_true') 
     
     # Dataset parameters
     parser.add_argument('--data-path', default='/datasets01/imagenet_full_size/061417/', type=str,
@@ -198,10 +192,8 @@ def main(args):
 
     print(args)
 
-    if args.distillation_type != 'none' and args.finetune and not args.eval:
-        raise NotImplementedError("Finetuning with distillation not yet supported")
-
-    device = torch.device(args.device)
+#     device = torch.device(args.device)
+    device = torch.device('cpu')
 
     # fix the seed for reproducibility
     seed = args.seed + utils.get_rank()
@@ -245,8 +237,6 @@ def main(args):
         pin_memory=args.pin_mem,
         drop_last=True,
     )
-    if args.ThreeAugment:
-        data_loader_train.dataset.transform = new_data_aug_generator(args)
 
     data_loader_val = torch.utils.data.DataLoader(
         dataset_val, sampler=sampler_val,
@@ -301,7 +291,6 @@ def main(args):
     lr_scheduler, _ = create_scheduler(args, optimizer)
 
     criterion = LabelSmoothingCrossEntropy()
-
     if mixup_active:
         # smoothing is handled with mixup label transform
         criterion = SoftTargetCrossEntropy()
@@ -312,9 +301,7 @@ def main(args):
         
     if args.bce_loss:
         criterion = torch.nn.BCEWithLogitsLoss()
-        
     teacher_model = None
-
     # wrap the criterion in our custom DistillationLoss, which
     # just dispatches to the original criterion if args.distillation_type is 'none'
     criterion = DistillationLoss(
