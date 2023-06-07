@@ -159,11 +159,11 @@ def main(args):
 
     model_without_ddp = model
     model_without_ddp2 = model2
-    if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-        model_without_ddp = model.module
-        model2 = torch.nn.parallel.DistributedDataParallel(model2, device_ids=[args.gpu])
-        model_without_ddp2 = model2.module
+#     if args.distributed:
+#         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+#         model_without_ddp = model.module
+#         model2 = torch.nn.parallel.DistributedDataParallel(model2, device_ids=[args.gpu])
+#         model_without_ddp2 = model2.module
 
     # preparation
     for name, mod in model.named_modules():
