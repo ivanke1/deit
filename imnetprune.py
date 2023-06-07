@@ -239,39 +239,39 @@ def main(args):
             resume='')
 
     model_without_ddp = model
-    if args.distributed:
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-        model_without_ddp = model.module
-    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print('number of params:', n_parameters)
-    if not args.unscale_lr:
-        linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
-        args.lr = linear_scaled_lr
-    optimizer = create_optimizer(args, model_without_ddp)
-    loss_scaler = NativeScaler()
+#     if args.distributed:
+#         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+#         model_without_ddp = model.module
+#     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+#     print('number of params:', n_parameters)
+#     if not args.unscale_lr:
+#         linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
+#         args.lr = linear_scaled_lr
+#     optimizer = create_optimizer(args, model_without_ddp)
+#     loss_scaler = NativeScaler()
 
-    lr_scheduler, _ = create_scheduler(args, optimizer)
+#     lr_scheduler, _ = create_scheduler(args, optimizer)
 
-    criterion = LabelSmoothingCrossEntropy()
+#     criterion = LabelSmoothingCrossEntropy()
 
-    if mixup_active:
-        # smoothing is handled with mixup label transform
-        criterion = SoftTargetCrossEntropy()
-    elif args.smoothing:
-        criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
-    else:
-        criterion = torch.nn.CrossEntropyLoss()
+#     if mixup_active:
+#         # smoothing is handled with mixup label transform
+#         criterion = SoftTargetCrossEntropy()
+#     elif args.smoothing:
+#         criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
+#     else:
+#         criterion = torch.nn.CrossEntropyLoss()
         
-    if args.bce_loss:
-        criterion = torch.nn.BCEWithLogitsLoss()
+#     if args.bce_loss:
+#         criterion = torch.nn.BCEWithLogitsLoss()
         
-    teacher_model = None
+#     teacher_model = None
 
-    # wrap the criterion in our custom DistillationLoss, which
-    # just dispatches to the original criterion if args.distillation_type is 'none'
-    criterion = DistillationLoss(
-        criterion, teacher_model, args.distillation_type, args.distillation_alpha, args.distillation_tau
-    )
+#     # wrap the criterion in our custom DistillationLoss, which
+#     # just dispatches to the original criterion if args.distillation_type is 'none'
+#     criterion = DistillationLoss(
+#         criterion, teacher_model, args.distillation_type, args.distillation_alpha, args.distillation_tau
+#     )
 
     output_dir = Path(args.output_dir)
     if args.resume:
@@ -282,15 +282,15 @@ def main(args):
                     prune.identity(mod, 'weight')
         checkpoint = torch.load(args.resume, map_location='cpu')
         model_without_ddp.load_state_dict(checkpoint['model'])
-        if not args.eval and args.mask_resume and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
-            optimizer.load_state_dict(checkpoint['optimizer'])
-            lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-            args.start_epoch = checkpoint['epoch'] + 1
-            if args.model_ema:
-                utils._load_checkpoint_for_ema(model_ema, checkpoint['model_ema'])
-            if 'scaler' in checkpoint:
-                loss_scaler.load_state_dict(checkpoint['scaler'])
-        lr_scheduler.step(args.start_epoch)
+#         if not args.eval and args.mask_resume and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
+#             optimizer.load_state_dict(checkpoint['optimizer'])
+#             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+#             args.start_epoch = checkpoint['epoch'] + 1
+#             if args.model_ema:
+#                 utils._load_checkpoint_for_ema(model_ema, checkpoint['model_ema'])
+#             if 'scaler' in checkpoint:
+#                 loss_scaler.load_state_dict(checkpoint['scaler'])
+#         lr_scheduler.step(args.start_epoch)
     
     if args.mask:
         ptp = ()
@@ -315,19 +315,18 @@ def main(args):
             if model_ema != None:
                 utils.save_on_master({
                     'model': model_without_ddp.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'lr_scheduler': lr_scheduler.state_dict(),
-                    'epoch': epoch,
+#                     'optimizer': optimizer.state_dict(),
+#                     'lr_scheduler': lr_scheduler.state_dict(),
                     'model_ema': get_state_dict(model_ema),
-                    'scaler': loss_scaler.state_dict(),
+#                     'scaler': loss_scaler.state_dict(),
                     'args': args,
                 }, checkpoint_path)
             else:
                 utils.save_on_master({
                     'model': model_without_ddp.state_dict(),
-                    'optimizer': optimizer.state_dict(),
-                    'lr_scheduler': lr_scheduler.state_dict(),
-                    'scaler': loss_scaler.state_dict(),
+#                     'optimizer': optimizer.state_dict(),
+#                     'lr_scheduler': lr_scheduler.state_dict(),
+#                     'scaler': loss_scaler.state_dict(),
                     'args': args,
                 }, checkpoint_path)
                 
