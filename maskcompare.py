@@ -183,11 +183,24 @@ def main(args):
     for name, mod in model2.named_modules():
         if(hasattr(mod, 'weight') and name != 'module.head'):
             prune.identity(mod, 'weight')
-        
+    total_zero = 0
+    total = 0
+    for name, mod in model.named_modules():
+        if(hasattr(mod, 'weight') and name != 'module.head'):
+            total_zero += float(torch.sum(mod.weight == 0))
+            total += float(mod.weight.nelement())
+    print("Sparsity 1: {:.2f}%".format(100.*float(total_zero)/float(total)))
+    total_zero = 0
+    total = 0
+    for name, mod in model2.named_modules():
+        if(hasattr(mod, 'weight') and name != 'module.head'):
+            total_zero += float(torch.sum(mod.weight == 0))
+            total += float(mod.weight.nelement())
+    print("Sparsity 2: {:.2f}%".format(100.*float(total_zero)/float(total)))
     similar = 0
     total = 0
     for (name1, mod1), (name2, mod2) in zip(model.named_modules(), model2.named_modules()):
-        if(hasattr(mod1, 'weight') and name1 != 'head'):
+        if(hasattr(mod1, 'weight') and name1 != 'module.head'):
             similar += float(torch.sum(torch.eq(mod1.weight, mod2.weight)))
             total += float(mod.weight.nelement())
     print("Shared Sparsity: {:.2f}%".format(100. * float(similar)/float(total)))
