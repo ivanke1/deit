@@ -329,8 +329,6 @@ def main(args):
                 total_zero += float(torch.sum(mod.weight == 0))
                 total += float(mod.weight.nelement())
         print("Sparsity: {:.2f}%".format(100.*float(total_zero)/float(total)))
-        print(total_zero)
-        print(total)
         #modelwoddp
         total_zero = 0
         total = 0
@@ -339,8 +337,6 @@ def main(args):
                 total_zero += float(torch.sum(mod.weight == 0))
                 total += float(mod.weight.nelement())
         print("Sparsity: {:.2f}%".format(100.*float(total_zero)/float(total)))
-        print(total_zero)
-        print(total)
         if not args.eval and args.mask_resume and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
             optimizer.load_state_dict(checkpoint['optimizer'])
             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
@@ -486,19 +482,6 @@ def main(args):
             total_zero += float(torch.sum(mod.weight == 0))
             total += float(mod.weight.nelement())
     print("Sparsity: {:.2f}%".format(100.*float(total_zero)/float(total)))
-    print(total_zero)
-    print(total)
-    #modelwoddp
-    total_zero = 0
-    total = 0
-    for name, mod in model_without_ddp.named_modules():
-        if(hasattr(mod, 'weight') and name != 'module.head'):
-            total_zero += float(torch.sum(mod.weight == 0))
-            total += float(mod.weight.nelement())
-    print("Sparsity: {:.2f}%".format(100.*float(total_zero)/float(total)))
-    print(total_zero)
-    print(total)
-
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser('DeiT training and evaluation script', parents=[get_args_parser()])
