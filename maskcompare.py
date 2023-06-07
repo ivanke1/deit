@@ -114,7 +114,7 @@ def main(args):
     print(args)
 
     device = torch.device(args.device)
-    device = torch.device("cpu")
+#     device = torch.device("cpu")
 
     # fix the seed for reproducibility
     seed = args.seed + utils.get_rank()
