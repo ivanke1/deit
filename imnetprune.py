@@ -149,19 +149,6 @@ def get_args_parser():
     parser.add_argument('--distillation-alpha', default=0.5, type=float, help="")
     parser.add_argument('--distillation-tau', default=1.0, type=float, help="")
 
-    # * Finetuning params
-    parser.add_argument('--finetune', default='', help='finetune from checkpoint')
-    parser.add_argument('--attn-only', action='store_true') 
-    
-    # Dataset parameters
-    parser.add_argument('--data-path', default='/datasets01/imagenet_full_size/061417/', type=str,
-                        help='dataset path')
-    parser.add_argument('--data-set', default='IMNET', choices=['CIFAR', 'IMNET', 'INAT', 'INAT19'],
-                        type=str, help='Image Net dataset path')
-    parser.add_argument('--inat-category', default='name',
-                        choices=['kingdom', 'phylum', 'class', 'order', 'supercategory', 'family', 'genus', 'name'],
-                        type=str, help='semantic granularity')
-
     parser.add_argument('--output_dir', default='',
                         help='path where to save, empty for no saving')
     parser.add_argument('--device', default='cuda',
@@ -170,9 +157,6 @@ def get_args_parser():
     parser.add_argument('--resume', default='', help='resume from checkpoint')
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
-    parser.add_argument('--eval', action='store_true', help='Perform evaluation only')
-    parser.add_argument('--eval-crop-ratio', default=0.875, type=float, help="Crop ratio for evaluation")
-    parser.add_argument('--dist-eval', action='store_true', default=False, help='Enabling distributed evaluation')
     parser.add_argument('--num_workers', default=10, type=int)
     parser.add_argument('--pin-mem', action='store_true',
                         help='Pin CPU memory in DataLoader for more efficient (sometimes) transfer to GPU.')
@@ -194,12 +178,12 @@ def get_args_parser():
     return parser
 
 def main(args):
-#     utils.init_distributed_mode(args)
+    utils.init_distributed_mode(args)
 
     print(args)
 
-#     device = torch.device(args.device)
-    device = torch.device('cpu')
+    device = torch.device(args.device)
+#     device = torch.device('cpu')
 
     # fix the seed for reproducibility
     seed = args.seed + utils.get_rank()
@@ -240,63 +224,63 @@ def main(args):
             resume='')
 
     model_without_ddp = model
-#     if args.distributed:
-#         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
-#         model_without_ddp = model.module
-#     n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
-#     print('number of params:', n_parameters)
-#     if not args.unscale_lr:
-#         linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
-#         args.lr = linear_scaled_lr
-#     optimizer = create_optimizer(args, model_without_ddp)
-#     loss_scaler = NativeScaler()
+    if args.distributed:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.gpu])
+        model_without_ddp = model.module
+    n_parameters = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print('number of params:', n_parameters)
+    if not args.unscale_lr:
+        linear_scaled_lr = args.lr * args.batch_size * utils.get_world_size() / 512.0
+        args.lr = linear_scaled_lr
+    optimizer = create_optimizer(args, model_without_ddp)
+    loss_scaler = NativeScaler()
 
-#     lr_scheduler, _ = create_scheduler(args, optimizer)
+    lr_scheduler, _ = create_scheduler(args, optimizer)
 
-#     criterion = LabelSmoothingCrossEntropy()
+    criterion = LabelSmoothingCrossEntropy()
 
-#     if mixup_active:
-#         # smoothing is handled with mixup label transform
-#         criterion = SoftTargetCrossEntropy()
-#     elif args.smoothing:
-#         criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
-#     else:
-#         criterion = torch.nn.CrossEntropyLoss()
+    if mixup_active:
+        # smoothing is handled with mixup label transform
+        criterion = SoftTargetCrossEntropy()
+    elif args.smoothing:
+        criterion = LabelSmoothingCrossEntropy(smoothing=args.smoothing)
+    else:
+        criterion = torch.nn.CrossEntropyLoss()
         
-#     if args.bce_loss:
-#         criterion = torch.nn.BCEWithLogitsLoss()
+    if args.bce_loss:
+        criterion = torch.nn.BCEWithLogitsLoss()
         
-#     teacher_model = None
+    teacher_model = None
 
-#     # wrap the criterion in our custom DistillationLoss, which
-#     # just dispatches to the original criterion if args.distillation_type is 'none'
-#     criterion = DistillationLoss(
-#         criterion, teacher_model, args.distillation_type, args.distillation_alpha, args.distillation_tau
-#     )
+    # wrap the criterion in our custom DistillationLoss, which
+    # just dispatches to the original criterion if args.distillation_type is 'none'
+    criterion = DistillationLoss(
+        criterion, teacher_model, args.distillation_type, args.distillation_alpha, args.distillation_tau
+    )
 
     output_dir = Path(args.output_dir)
     if args.resume:
         if args.load_mask:
             for name, mod in model.named_modules():
-                if(hasattr(mod, 'weight') and name != 'module.head'):
+                if(hasattr(mod, 'weight') and name != 'module.head' and name != 'head'):
                     print("Identity pruning to prepare mask")
                     prune.identity(mod, 'weight')
         checkpoint = torch.load(args.resume, map_location='cpu')
         model_without_ddp.load_state_dict(checkpoint['model'])
-#         if not args.eval and args.mask_resume and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
-#             optimizer.load_state_dict(checkpoint['optimizer'])
-#             lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
-#             args.start_epoch = checkpoint['epoch'] + 1
-#             if args.model_ema:
-#                 utils._load_checkpoint_for_ema(model_ema, checkpoint['model_ema'])
-#             if 'scaler' in checkpoint:
-#                 loss_scaler.load_state_dict(checkpoint['scaler'])
-#         lr_scheduler.step(args.start_epoch)
+        if not args.eval and args.mask_resume and 'optimizer' in checkpoint and 'lr_scheduler' in checkpoint and 'epoch' in checkpoint:
+            optimizer.load_state_dict(checkpoint['optimizer'])
+            lr_scheduler.load_state_dict(checkpoint['lr_scheduler'])
+            args.start_epoch = checkpoint['epoch'] + 1
+            if args.model_ema:
+                utils._load_checkpoint_for_ema(model_ema, checkpoint['model_ema'])
+            if 'scaler' in checkpoint:
+                loss_scaler.load_state_dict(checkpoint['scaler'])
+        lr_scheduler.step(args.start_epoch)
     
     if args.mask:
         ptp = ()
         for name, mod in model.named_modules():
-            if(hasattr(mod, 'weight') and name != 'module.head'):
+            if(hasattr(mod, 'weight') and name != 'module.head' and name != 'head'):
                 ptp += ((mod,'weight'),)
         prune.global_unstructured(ptp, prune.L1Unstructured, amount=args.mask_sparsity)
         for name, mod in model.named_modules():
@@ -316,18 +300,18 @@ def main(args):
             if model_ema != None:
                 utils.save_on_master({
                     'model': model_without_ddp.state_dict(),
-#                     'optimizer': optimizer.state_dict(),
-#                     'lr_scheduler': lr_scheduler.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'lr_scheduler': lr_scheduler.state_dict(),
                     'model_ema': get_state_dict(model_ema),
-#                     'scaler': loss_scaler.state_dict(),
+                    'scaler': loss_scaler.state_dict(),
                     'args': args,
                 }, checkpoint_path)
             else:
                 utils.save_on_master({
                     'model': model_without_ddp.state_dict(),
-#                     'optimizer': optimizer.state_dict(),
-#                     'lr_scheduler': lr_scheduler.state_dict(),
-#                     'scaler': loss_scaler.state_dict(),
+                    'optimizer': optimizer.state_dict(),
+                    'lr_scheduler': lr_scheduler.state_dict(),
+                    'scaler': loss_scaler.state_dict(),
                     'args': args,
                 }, checkpoint_path)
                 
