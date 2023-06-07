@@ -166,18 +166,12 @@ def main(args):
         model_without_ddp2 = model2.module
 
     # preparation
-    total1 = 0
     for name, mod in model.named_modules():
         if(hasattr(mod, 'weight') and name != 'module.head'):
             prune.identity(mod, 'weight')
-            total1 += float(mod.weight.nelement())
-    print(total1)
-    total2 = 0
     for name, mod in model2.named_modules():
         if(hasattr(mod, 'weight') and name != 'head'):
             prune.identity(mod, 'weight')
-            total2 += float(mod.weight.nelement())
-    print(total2)
     checkpoint = torch.load(args.mask_receiver, map_location='cpu')
     model_without_ddp.load_state_dict(checkpoint['model'])
     donor_checkpoint = torch.load(args.mask_donor, map_location='cpu')
@@ -209,7 +203,7 @@ def main(args):
     for (name1, mod1), (name2, mod2) in zip(model.named_modules(), model2.named_modules()):
         if(hasattr(mod1, 'weight') and name1 != 'head' and name1 != 'module.head'):
             similar += float(torch.sum(torch.eq(mod1.weight, mod2.weight)))
-            total += float(mod.weight.nelement())
+            total += float(mod1.weight.nelement())
     print("Shared Sparsity: {:.2f}%".format(100. * float(similar)/float(total)))
     print(similar)
     print(total)
