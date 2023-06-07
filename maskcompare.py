@@ -206,6 +206,7 @@ def main(args):
             total += float(mod.weight.nelement())
     print("Shared Sparsity: {:.2f}%".format(100. * float(similar)/float(total)))
     print(similar)
+    print(total)
    
 
 if __name__ == '__main__':
