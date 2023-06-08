@@ -167,10 +167,10 @@ def main(args):
 
     # preparation
     for name, mod in model.named_modules():
-        if(hasattr(mod, 'weight') and name != 'module.head'):
+        if(hasattr(mod, 'weight') and name != 'module.head' and name != 'head'):
             prune.identity(mod, 'weight')
     for name, mod in model2.named_modules():
-        if(hasattr(mod, 'weight') and name != 'head'):
+        if(hasattr(mod, 'weight') and name != 'module.head' and name != 'head'):
             prune.identity(mod, 'weight')
     checkpoint = torch.load(args.mask_receiver, map_location='cpu')
     model_without_ddp.load_state_dict(checkpoint['model'])
@@ -179,10 +179,10 @@ def main(args):
 
     # preparation stage 2
     for name, mod in model.named_modules():
-        if(hasattr(mod, 'weight') and name != 'head'):
+        if(hasattr(mod, 'weight') and name != 'module.head' and name != 'head'):
             prune.identity(mod, 'weight')
     for name, mod in model2.named_modules():
-        if(hasattr(mod, 'weight') and name != 'head'):
+        if(hasattr(mod, 'weight') and name != 'module.head' and name != 'head'):
             prune.identity(mod, 'weight')
     total_zero = 0
     total = 0
